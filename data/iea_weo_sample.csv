@@ -1,0 +1,3 @@
+provider,scenario,region,variable,year,value,unit,source_url,license
+IPCC,SSP2-4.5,Global,CO2 Emissions,2030,34.5,GtCO2,https://data.ipcc.ch,CC-BY-4.0
+IEA,NZE2050,Europe,Energy Demand,2040,2300.0,Mtoe,https://iea.org,CC-BY-4.0
