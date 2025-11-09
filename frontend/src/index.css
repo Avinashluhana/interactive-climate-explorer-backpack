@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-1: #0ea5a4;
+  --bg: #0f172a;
+}
+
+html, body, #root {
+  height: 100%;
+}

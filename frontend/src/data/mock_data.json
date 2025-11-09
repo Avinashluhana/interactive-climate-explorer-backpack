@@ -1,0 +1,70 @@
+{
+  "datasets": [
+    {
+      "provider": "IPCC",
+      "scenario": "SSP2-4.5",
+      "region": "Global",
+      "variable": "CO2 Emissions",
+      "year": 2020,
+      "value": 36.6,
+      "unit": "GtCO2",
+      "source_url": "https://data.ipcc.ch",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "provider": "IPCC",
+      "scenario": "SSP2-4.5",
+      "region": "Global",
+      "variable": "CO2 Emissions",
+      "year": 2030,
+      "value": 34.5,
+      "unit": "GtCO2",
+      "source_url": "https://data.ipcc.ch",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "provider": "IPCC",
+      "scenario": "SSP2-4.5",
+      "region": "Global",
+      "variable": "CO2 Emissions",
+      "year": 2040,
+      "value": 33.0,
+      "unit": "GtCO2",
+      "source_url": "https://data.ipcc.ch",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "provider": "IEA",
+      "scenario": "NZE2050",
+      "region": "Europe",
+      "variable": "Energy Demand",
+      "year": 2020,
+      "value": 2500,
+      "unit": "Mtoe",
+      "source_url": "https://iea.org",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "provider": "IEA",
+      "scenario": "NZE2050",
+      "region": "Europe",
+      "variable": "Energy Demand",
+      "year": 2030,
+      "value": 2400,
+      "unit": "Mtoe",
+      "source_url": "https://iea.org",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "provider": "IEA",
+      "scenario": "NZE2050",
+      "region": "Europe",
+      "variable": "Energy Demand",
+      "year": 2040,
+      "value": 2300,
+      "unit": "Mtoe",
+      "source_url": "https://iea.org",
+      "license": "CC-BY-4.0"
+    }
+  ]
+}
