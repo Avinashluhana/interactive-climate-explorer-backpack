@@ -1,93 +1,90 @@
 import os
-import glob
 from functools import lru_cache
 import pandas as pd
 from typing import List
 
-# If user-provided files not present, these are the local paths from your session history.
-# The system that deploys this may transform them to URLs; for local testing these are file paths.
-FALLBACK_PATHS = [
-    "/mnt/data/ipcc_ar6_sample.csv",
-    "/mnt/data/iea_weo_sample.csv",
-]
-
-EXPECTED_COLUMNS = [
-    "provider",
-    "scenario",
-    "region",
-    "variable",
-    "year",
-    "value",
-    "unit",
-    "source_url",
-    "license",
-]
-
-
-def _read_csv_file(path: str) -> pd.DataFrame:
-    df = pd.read_csv(path, dtype=str)  # read everything as str then coerce
-    # Ensure columns exist; if missing, try to handle common variants
-    cols = [c.strip() for c in df.columns.tolist()]
-    df.columns = cols
-    # Keep only expected columns if present; otherwise create missing
-    for c in EXPECTED_COLUMNS:
-        if c not in df.columns:
-            df[c] = pd.NA
-    df = df[EXPECTED_COLUMNS]
-    # Coerce types
-    df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
-    df["value"] = pd.to_numeric(df["value"], errors="coerce").astype(float)
-    # Strip whitespace from strings
-    for c in ["provider", "scenario", "region", "variable", "unit", "source_url", "license"]:
-        df[c] = df[c].astype(str).str.strip().replace("nan", pd.NA)
-    return df
+EXCEL_PATH = "data/R60_bulk.xls"
 
 
 @lru_cache(maxsize=1)
-def load_all_data(data_dir: str = "data") -> pd.DataFrame:
+def load_excel_data() -> pd.DataFrame:
     """
-    Load and combine all CSV files in the `data` directory.
-    Falls back to hardcoded paths if no files are found.
+    Load the wide-format XLS (Region, Scenario, Variable, Unit, years..., Notes)
+    Convert to long-format and return DataFrame with columns:
+      provider, region, scenario, variable, unit, year, value, notes
+    provider is set statically to 'IPCC-R6'.
     """
-    frames: List[pd.DataFrame] = []
-    # search for csv files in data_dir
-    if os.path.isdir(data_dir):
-        files = glob.glob(os.path.join(data_dir, "*.csv"))
-    else:
-        files = []
-
-    if not files:
-        # try fallback known paths
-        for path in FALLBACK_PATHS:
-            if os.path.isfile(path):
-                files.append(path)
-
-    if not files:
+    if not os.path.isfile(EXCEL_PATH):
         raise FileNotFoundError(
-            f"No CSVs found in '{data_dir}' and fallback paths are not present. "
-            "Please add your CSV(s) to the data directory."
+            f"Excel file not found at: {EXCEL_PATH}. "
+            "Place the file there or update EXCEL_PATH in data/loader.py."
         )
 
-    for f in files:
-        try:
-            df = _read_csv_file(f)
-            df["__source_file"] = os.path.basename(f)
-            frames.append(df)
-        except Exception as e:
-            # skip bad files but log to console
-            print(f"Warning: failed to load {f}: {e}")
+    # Read Excel (.xls uses xlrd engine)
+    df = pd.read_excel(EXCEL_PATH, engine="xlrd")
 
-    if not frames:
-        raise RuntimeError("No data frames loaded from any CSV file.")
+    # Normalize column names
+    df.columns = [str(c).strip() for c in df.columns]
 
-    combined = pd.concat(frames, ignore_index=True)
-    # Normalize values: drop rows with missing year or value or provider or variable
-    combined = combined.dropna(subset=["year", "value", "provider", "variable"])
-    # Optionally standardize provider names casing
-    combined["provider"] = combined["provider"].str.strip()
-    combined["variable"] = combined["variable"].str.strip()
-    combined["region"] = combined["region"].fillna("Global").str.strip()
-    combined["scenario"] = combined["scenario"].fillna("N/A").str.strip()
-    combined = combined.sort_values(by=["provider", "variable", "region", "year"])
-    combined.reset_index(drop=True, inplace=True)
-    return combined
+    # Identify year columns (simple heuristic: column name is digits and 4 chars)
+    year_cols: List[str] = [c for c in df.columns if str(c).strip().isdigit() and len(str(c).strip()) == 4]
+
+    if not year_cols:
+        # fallback: any column that looks like an integer year
+        year_cols = [c for c in df.columns if str(c).strip().isdigit()]
+
+    if not year_cols:
+        raise ValueError("No year columns detected in Excel. Expected columns like 2000,2005,...2100")
+
+    # Ensure id columns exist
+    id_vars = []
+    for col in ["Region", "Scenario", "Variable", "Unit", "Notes"]:
+        if col in df.columns:
+            id_vars.append(col)
+        else:
+            df[col] = pd.NA
+            id_vars.append(col)
+
+    # Melt wide->long
+    long_df = df.melt(
+        id_vars=id_vars,
+        value_vars=year_cols,
+        var_name="year",
+        value_name="value"
+    )
+
+    # Rename to consistent column names
+    long_df.rename(columns={
+        "Region": "region",
+        "Scenario": "scenario",
+        "Variable": "variable",
+        "Unit": "unit",
+        "Notes": "notes"
+    }, inplace=True)
+
+    # provider static (no provider column in XLS)
+    long_df["provider"] = "IPCC-R6"
+
+    # Coerce year and numeric values
+    # sometimes the year columns are numbers so they become int/float: cast explicitly
+    long_df["year"] = pd.to_numeric(long_df["year"], errors="coerce").astype("Int64")
+    long_df["value"] = pd.to_numeric(long_df["value"], errors="coerce")
+
+    # Trim whitespace for text columns and replace "nan" strings introduced by pandas
+    for c in ["provider", "region", "scenario", "variable", "unit", "notes"]:
+        if c in long_df.columns:
+            long_df[c] = long_df[c].astype(object).where(long_df[c].notna(), None)
+            # If it's a string, strip; if None leave it
+            long_df[c] = long_df[c].apply(lambda v: v.strip() if isinstance(v, str) else None)
+
+    # Drop rows that miss required fields (year, value, region, variable)
+    long_df = long_df.dropna(subset=["year", "value", "region", "variable"])
+
+    # Convert types to safe python types
+    long_df["year"] = long_df["year"].astype(int)
+    long_df["value"] = long_df["value"].astype(float)
+
+    # Sort for consistent output
+    long_df = long_df.sort_values(by=["region", "scenario", "variable", "year"]).reset_index(drop=True)
+
+    return long_df

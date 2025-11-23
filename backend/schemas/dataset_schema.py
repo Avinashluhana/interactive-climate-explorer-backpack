@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from typing import Optional
 
 
@@ -12,6 +12,7 @@ class DatasetRow(BaseModel):
     unit: Optional[str] = None
     source_url: Optional[str] = None
     license: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class DatasetQueryParams(BaseModel):
