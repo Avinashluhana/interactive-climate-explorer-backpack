@@ -1,12 +1,24 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
+from typing import Optional
 
-class Dataset(BaseModel):
+
+class DatasetRow(BaseModel):
     provider: str
     scenario: str
     region: str
     variable: str
     year: int
     value: float
-    unit: str
-    source_url: str
-    license: str
+    unit: Optional[str] = None
+    source_url: Optional[str] = None
+    license: Optional[str] = None
+
+
+class DatasetQueryParams(BaseModel):
+    provider: Optional[str] = None
+    variable: Optional[str] = None
+    region: Optional[str] = None
+    scenario: Optional[str] = None
+    start_year: Optional[int] = None
+    end_year: Optional[int] = None
+    limit: Optional[int] = 1000
