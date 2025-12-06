@@ -1,51 +1,28 @@
 import os
 from functools import lru_cache
 import pandas as pd
-from typing import List
 
 EXCEL_PATH = "data/R60_bulk.xls"
+CSV_PATH = "data/SSP_CMIP6_201811.csv"
 
 
-@lru_cache(maxsize=1)
-def load_excel_data() -> pd.DataFrame:
-    """
-    Load the wide-format XLS (Region, Scenario, Variable, Unit, years..., Notes)
-    Convert to long-format and return DataFrame with columns:
-      provider, region, scenario, variable, unit, year, value, notes
-    provider is set statically to 'IPCC-R6'.
-    """
+# -------------------------------
+# 1. LOAD XLS (IPCC-R6)
+# -------------------------------
+def load_ipcc_excel() -> pd.DataFrame:
     if not os.path.isfile(EXCEL_PATH):
-        raise FileNotFoundError(
-            f"Excel file not found at: {EXCEL_PATH}. "
-            "Place the file there or update EXCEL_PATH in data/loader.py."
-        )
+        raise FileNotFoundError(f"Missing XLS file at {EXCEL_PATH}")
 
-    # Read Excel (.xls uses xlrd engine)
     df = pd.read_excel(EXCEL_PATH, engine="xlrd")
-
-    # Normalize column names
     df.columns = [str(c).strip() for c in df.columns]
 
-    # Identify year columns (simple heuristic: column name is digits and 4 chars)
-    year_cols: List[str] = [c for c in df.columns if str(c).strip().isdigit() and len(str(c).strip()) == 4]
+    year_cols = [c for c in df.columns if c.isdigit()]
+    id_vars = ["Region", "Scenario", "Variable", "Unit", "Notes"]
 
-    if not year_cols:
-        # fallback: any column that looks like an integer year
-        year_cols = [c for c in df.columns if str(c).strip().isdigit()]
+    for col in id_vars:
+        if col not in df.columns:
+            df[col] = None
 
-    if not year_cols:
-        raise ValueError("No year columns detected in Excel. Expected columns like 2000,2005,...2100")
-
-    # Ensure id columns exist
-    id_vars = []
-    for col in ["Region", "Scenario", "Variable", "Unit", "Notes"]:
-        if col in df.columns:
-            id_vars.append(col)
-        else:
-            df[col] = pd.NA
-            id_vars.append(col)
-
-    # Melt wide->long
     long_df = df.melt(
         id_vars=id_vars,
         value_vars=year_cols,
@@ -53,7 +30,6 @@ def load_excel_data() -> pd.DataFrame:
         value_name="value"
     )
 
-    # Rename to consistent column names
     long_df.rename(columns={
         "Region": "region",
         "Scenario": "scenario",
@@ -62,29 +38,64 @@ def load_excel_data() -> pd.DataFrame:
         "Notes": "notes"
     }, inplace=True)
 
-    # provider static (no provider column in XLS)
     long_df["provider"] = "IPCC-R6"
-
-    # Coerce year and numeric values
-    # sometimes the year columns are numbers so they become int/float: cast explicitly
-    long_df["year"] = pd.to_numeric(long_df["year"], errors="coerce").astype("Int64")
+    long_df["year"] = pd.to_numeric(long_df["year"], errors="coerce")
     long_df["value"] = pd.to_numeric(long_df["value"], errors="coerce")
 
-    # Trim whitespace for text columns and replace "nan" strings introduced by pandas
-    for c in ["provider", "region", "scenario", "variable", "unit", "notes"]:
-        if c in long_df.columns:
-            long_df[c] = long_df[c].astype(object).where(long_df[c].notna(), None)
-            # If it's a string, strip; if None leave it
-            long_df[c] = long_df[c].apply(lambda v: v.strip() if isinstance(v, str) else None)
+    return long_df.dropna(subset=["region", "variable", "year", "value"])
 
-    # Drop rows that miss required fields (year, value, region, variable)
-    long_df = long_df.dropna(subset=["year", "value", "region", "variable"])
 
-    # Convert types to safe python types
-    long_df["year"] = long_df["year"].astype(int)
-    long_df["value"] = long_df["value"].astype(float)
+# -------------------------------
+# 2. LOAD CSV (New dataset)
+# -------------------------------
+def load_ssp_csv() -> pd.DataFrame:
+    if not os.path.isfile(CSV_PATH):
+        return pd.DataFrame()  # CSV optional
 
-    # Sort for consistent output
-    long_df = long_df.sort_values(by=["region", "scenario", "variable", "year"]).reset_index(drop=True)
+    df = pd.read_csv(CSV_PATH)
+    df.columns = [str(c).strip() for c in df.columns]
 
-    return long_df
+    id_vars = ["MODEL", "SCENARIO", "REGION", "VARIABLE", "UNIT"]
+    year_cols = [c for c in df.columns if c.isdigit()]
+
+    long_df = df.melt(
+        id_vars=id_vars,
+        value_vars=year_cols,
+        var_name="year",
+        value_name="value"
+    )
+
+    long_df.rename(columns={
+        "MODEL": "provider",
+        "SCENARIO": "scenario",
+        "REGION": "region",
+        "VARIABLE": "variable",
+        "UNIT": "unit",
+    }, inplace=True)
+
+    long_df["year"] = pd.to_numeric(long_df["year"], errors="coerce")
+    long_df["value"] = pd.to_numeric(long_df["value"], errors="coerce")
+    long_df["notes"] = None
+
+    return long_df.dropna(subset=["region", "variable", "year", "value"])
+
+
+# -------------------------------
+# 3. MERGE BOTH DATASETS
+# -------------------------------
+@lru_cache(maxsize=1)
+def load_all_data() -> pd.DataFrame:
+    df_excel = load_ipcc_excel()
+    df_csv = load_ssp_csv()
+
+    # combine
+    combined = pd.concat([df_excel, df_csv], ignore_index=True)
+
+    # final cleanup
+    for col in ["provider", "region", "scenario", "variable", "unit"]:
+        combined[col] = combined[col].astype(str).str.strip()
+
+    combined["year"] = combined["year"].astype(int)
+    combined["value"] = combined["value"].astype(float)
+
+    return combined.sort_values(by=["provider", "region", "scenario", "variable", "year"])
