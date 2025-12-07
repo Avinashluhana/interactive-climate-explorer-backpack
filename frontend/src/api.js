@@ -15,19 +15,19 @@ export async function fetchProviders() {
   return res.data;
 }
 
-/**
- * Fetch list of variables from the backend.
- */
-export async function fetchVariables() {
-  const res = await api.get("/variables");
+/** Variables — now filtered by provider */
+export async function fetchVariables(provider) {
+  const res = await api.get("/variables", {
+    params: provider ? { provider } : {},
+  });
   return res.data;
 }
 
-/**
- * Fetch list of regions from the backend.
- */
-export async function fetchRegions() {
-  const res = await api.get("/regions");
+/** Regions — now filtered by provider */
+export async function fetchRegions(provider) {
+  const res = await api.get("/regions", {
+    params: provider ? { provider } : {},
+  });
   return res.data;
 }
 
