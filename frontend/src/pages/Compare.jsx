@@ -22,164 +22,134 @@ export default function Compare() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Load filter options
+  /** Load providers */
   useEffect(() => {
-    async function loadOptions() {
-      try {
-        setError("");
-        const [prov, vars, regs] = await Promise.all([
-          fetchProviders(),
-          fetchVariables(),
-          fetchRegions(),
-        ]);
-        setProviders(prov || []);
-        setVariables(vars || []);
-        setRegions(regs || []);
-
-        if (!provider && prov && prov.length > 0) {
-          setProvider(prov[0]);
-        }
-        if (!region && regs && regs.length > 0) {
-          setRegion(regs[0]);
-        }
-        if (!variableA && vars && vars.length > 0) {
-          setVariableA(vars[0]);
-        }
-        if (!variableB && vars && vars.length > 1) {
-          setVariableB(vars[1]);
-        }
-      } catch (err) {
-        console.error("Failed to load compare options", err);
-        setError("Failed to load options from API.");
-      }
+    async function loadProvidersList() {
+      const prov = await fetchProviders();
+      setProviders(prov);
+      if (!provider && prov.length) setProvider(prov[0]);
     }
-    loadOptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadProvidersList();
   }, []);
 
-  // Load the two series when selection changes
+  /** Load variables + regions when provider changes */
   useEffect(() => {
-    if (!provider || !region || !variableA || !variableB) {
-      return;
+    if (!provider) return;
+
+    async function loadDepFilters() {
+      try {
+        const [vars, regs] = await Promise.all([
+          fetchVariables(provider),
+          fetchRegions(provider),
+        ]);
+
+        setVariables(vars);
+        setRegions(regs);
+
+        setVariableA(vars[0] || "");
+        setVariableB(vars[1] || vars[0] || "");
+        setRegion(regs[0] || "");
+      } catch (err) {
+        setError("Failed loading variables / regions");
+      }
     }
 
-    async function loadSeries() {
+    loadDepFilters();
+  }, [provider]);
+
+  /** Load datasets for A + B */
+  useEffect(() => {
+    if (!provider || !region || !variableA || !variableB) return;
+
+    async function load() {
+      setLoading(true);
       try {
-        setLoading(true);
-        setError("");
         const [a, b] = await Promise.all([
-          fetchDatasets({ provider, region, variable: variableA, limit: 1000 }),
-          fetchDatasets({ provider, region, variable: variableB, limit: 1000 }),
+          fetchDatasets({ provider, region, variable: variableA }),
+          fetchDatasets({ provider, region, variable: variableB }),
         ]);
-        setSeriesA(a || []);
-        setSeriesB(b || []);
+
+        setSeriesA(a);
+        setSeriesB(b);
       } catch (err) {
-        console.error("Failed to load compare series", err);
-        setError("Failed to load comparison data from API.");
-        setSeriesA([]);
-        setSeriesB([]);
+        setError("Failed loading comparison data");
       } finally {
         setLoading(false);
       }
     }
 
-    loadSeries();
+    load();
   }, [provider, region, variableA, variableB]);
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-slate-900 rounded p-4 shadow-sm border dark:border-slate-800">
-        <h3 className="text-lg font-semibold mb-2">Compare Variables</h3>
-        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-          Compare two different variables for the same provider and region
-          using data served from the FastAPI backend.
-        </p>
+      <div className="p-4 bg-white dark:bg-slate-900 rounded">
 
         <div className="grid gap-4 md:grid-cols-4">
+
+          {/* Provider */}
           <div>
-            <label className="block text-sm mb-1">Provider</label>
+            <label>Provider</label>
             <select
-              className="w-full rounded border p-2 bg-white dark:bg-slate-800"
+              className="w-full p-2 border rounded"
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
             >
               {providers.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
+                <option key={p}>{p}</option>
               ))}
             </select>
           </div>
 
+          {/* Regions (filtered) */}
           <div>
-            <label className="block text-sm mb-1">Region</label>
+            <label>Region</label>
             <select
-              className="w-full rounded border p-2 bg-white dark:bg-slate-800"
+              className="w-full p-2 border rounded"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
             >
               {regions.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+                <option key={r}>{r}</option>
               ))}
             </select>
           </div>
 
+          {/* Var A */}
           <div>
-            <label className="block text-sm mb-1">Variable A</label>
+            <label>Variable A</label>
             <select
-              className="w-full rounded border p-2 bg-white dark:bg-slate-800"
+              className="w-full p-2 border rounded"
               value={variableA}
               onChange={(e) => setVariableA(e.target.value)}
             >
               {variables.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
+                <option key={v}>{v}</option>
               ))}
             </select>
           </div>
 
+          {/* Var B */}
           <div>
-            <label className="block text-sm mb-1">Variable B</label>
+            <label>Variable B</label>
             <select
-              className="w-full rounded border p-2 bg-white dark:bg-slate-800"
+              className="w-full p-2 border rounded"
               value={variableB}
               onChange={(e) => setVariableB(e.target.value)}
             >
               {variables.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
+                <option key={v}>{v}</option>
               ))}
             </select>
           </div>
-        </div>
 
-        {loading && (
-          <p className="mt-3 text-sm text-slate-500">Loading comparison…</p>
-        )}
-        {error && (
-          <p className="mt-3 text-sm text-red-500">
-            {error}
-          </p>
-        )}
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <h4 className="font-semibold mb-2">
-            {variableA || "Variable A"} — {region}
-          </h4>
-          <ChartView data={seriesA} variable={variableA} />
-        </div>
-        <div>
-          <h4 className="font-semibold mb-2">
-            {variableB || "Variable B"} — {region}
-          </h4>
-          <ChartView data={seriesB} variable={variableB} />
-        </div>
+      {/* Charts */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <ChartView data={seriesA} variable={variableA} />
+        <ChartView data={seriesB} variable={variableB} />
       </div>
     </div>
   );

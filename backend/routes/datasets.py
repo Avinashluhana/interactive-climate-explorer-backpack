@@ -14,14 +14,24 @@ def list_providers():
 
 
 @router.get("/variables", response_model=List[str])
-def list_variables():
+def list_variables(provider: Optional[str] = None):
     df = load_all_data()
+
+    # Filter based on provider
+    if provider:
+        df = df[df["provider"] == provider]
+
     return sorted(df["variable"].dropna().unique().tolist())
 
 
 @router.get("/regions", response_model=List[str])
-def list_regions():
+def list_regions(provider: Optional[str] = None):
     df = load_all_data()
+
+    # Filter based on provider
+    if provider:
+        df = df[df["provider"] == provider]
+
     return sorted(df["region"].dropna().unique().tolist())
 
 
@@ -75,11 +85,10 @@ def query_datasets(
     df = df.sort_values("year")
 
     # --- SUPER FAST RETURN ---
-    # Convert df -> list of dicts directly (no loops)
+    df = df.where(df.notna(), None)
     records = df.to_dict(orient="records")
-
-    # Pydantic bulk parsing (MUCH faster than row-by-row)
     return [DatasetRow.model_validate(r) for r in records]
+
 
 
 @router.get("/datasets/provider/{provider_name}", response_model=List[DatasetRow])
