@@ -14,30 +14,46 @@ def list_providers():
 
 
 @router.get("/variables", response_model=List[str])
-def list_variables(provider: Optional[str] = None):
+def list_variables(
+        provider: Optional[str] = None,
+        scenario: Optional[str] = None
+):
     df = load_all_data()
 
     # Filter based on provider
     if provider:
         df = df[df["provider"] == provider]
+
+    if scenario:
+        df = df[df["scenario"] == scenario]
 
     return sorted(df["variable"].dropna().unique().tolist())
 
 
 @router.get("/regions", response_model=List[str])
-def list_regions(provider: Optional[str] = None):
+def list_regions(
+        provider: Optional[str] = None,
+        scenario: Optional[str] = None
+):
     df = load_all_data()
 
     # Filter based on provider
     if provider:
         df = df[df["provider"] == provider]
 
+    if scenario:
+        df = df[df["scenario"] == scenario]
+
     return sorted(df["region"].dropna().unique().tolist())
 
 
 @router.get("/scenarios", response_model=List[str])
-def list_scenarios():
+def list_scenarios(provider: Optional[str] = None):
     df = load_all_data()
+
+    if provider:
+        df = df[df["provider"] == provider]
+
     return sorted(df["scenario"].dropna().unique().tolist())
 
 
@@ -88,7 +104,6 @@ def query_datasets(
     df = df.where(df.notna(), None)
     records = df.to_dict(orient="records")
     return [DatasetRow.model_validate(r) for r in records]
-
 
 
 @router.get("/datasets/provider/{provider_name}", response_model=List[DatasetRow])

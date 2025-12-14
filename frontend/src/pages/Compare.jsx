@@ -2,155 +2,158 @@ import React, { useEffect, useState } from "react";
 import ChartView from "../components/ChartView";
 import {
   fetchProviders,
+  fetchScenarios,
   fetchVariables,
   fetchRegions,
   fetchDatasets,
 } from "../api";
 
 export default function Compare() {
+  /* ---------- SHARED OPTIONS ---------- */
   const [providers, setProviders] = useState([]);
-  const [variables, setVariables] = useState([]);
-  const [regions, setRegions] = useState([]);
 
-  const [provider, setProvider] = useState("");
-  const [region, setRegion] = useState("");
+  /* ---------- GRAPH A STATE ---------- */
+  const [providerA, setProviderA] = useState("");
+  const [scenarioA, setScenarioA] = useState("");
+  const [regionA, setRegionA] = useState("");
   const [variableA, setVariableA] = useState("");
+
+  const [scenariosA, setScenariosA] = useState([]);
+  const [regionsA, setRegionsA] = useState([]);
+  const [variablesA, setVariablesA] = useState([]);
+  const [seriesA, setSeriesA] = useState([]);
+
+  /* ---------- GRAPH B STATE ---------- */
+  const [providerB, setProviderB] = useState("");
+  const [scenarioB, setScenarioB] = useState("");
+  const [regionB, setRegionB] = useState("");
   const [variableB, setVariableB] = useState("");
 
-  const [seriesA, setSeriesA] = useState([]);
+  const [scenariosB, setScenariosB] = useState([]);
+  const [regionsB, setRegionsB] = useState([]);
+  const [variablesB, setVariablesB] = useState([]);
   const [seriesB, setSeriesB] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /** Load providers */
+  /* ---------- LOAD PROVIDERS ---------- */
   useEffect(() => {
-    async function loadProvidersList() {
-      const prov = await fetchProviders();
-      setProviders(prov);
-      if (!provider && prov.length) setProvider(prov[0]);
+    async function loadProviders() {
+      const data = await fetchProviders();
+      setProviders(data || []);
+      setProviderA(data?.[0] || "");
+      setProviderB(data?.[0] || "");
     }
-    loadProvidersList();
+    loadProviders();
   }, []);
 
-  /** Load variables + regions when provider changes */
+  /* ---------- HELPERS ---------- */
+  async function loadScenarios(provider, setScenarios, setScenario) {
+    const data = await fetchScenarios(provider);
+    setScenarios(data || []);
+    setScenario(data?.[0] || "");
+  }
+
+  async function loadVarsRegions(provider, scenario, setVars, setRegs, setVar, setReg) {
+    const [vars, regs] = await Promise.all([
+      fetchVariables(provider, scenario),
+      fetchRegions(provider, scenario),
+    ]);
+    setVars(vars || []);
+    setRegs(regs || []);
+    setVar(vars?.[0] || "");
+    setReg(regs?.[0] || "");
+  }
+
+  /* ---------- GRAPH A FLOW ---------- */
   useEffect(() => {
-    if (!provider) return;
+    if (!providerA) return;
+    loadScenarios(providerA, setScenariosA, setScenarioA);
+  }, [providerA]);
 
-    async function loadDepFilters() {
-      try {
-        const [vars, regs] = await Promise.all([
-          fetchVariables(provider),
-          fetchRegions(provider),
-        ]);
-
-        setVariables(vars);
-        setRegions(regs);
-
-        setVariableA(vars[0] || "");
-        setVariableB(vars[1] || vars[0] || "");
-        setRegion(regs[0] || "");
-      } catch (err) {
-        setError("Failed loading variables / regions");
-      }
-    }
-
-    loadDepFilters();
-  }, [provider]);
-
-  /** Load datasets for A + B */
   useEffect(() => {
-    if (!provider || !region || !variableA || !variableB) return;
+    if (!providerA || !scenarioA) return;
+    loadVarsRegions(providerA, scenarioA, setVariablesA, setRegionsA, setVariableA, setRegionA);
+  }, [providerA, scenarioA]);
 
-    async function load() {
-      setLoading(true);
-      try {
-        const [a, b] = await Promise.all([
-          fetchDatasets({ provider, region, variable: variableA }),
-          fetchDatasets({ provider, region, variable: variableB }),
-        ]);
+  useEffect(() => {
+    if (!providerA || !scenarioA || !regionA || !variableA) return;
+    fetchDatasets({ provider: providerA, scenario: scenarioA, region: regionA, variable: variableA })
+      .then(setSeriesA)
+      .catch(() => setSeriesA([]));
+  }, [providerA, scenarioA, regionA, variableA]);
 
-        setSeriesA(a);
-        setSeriesB(b);
-      } catch (err) {
-        setError("Failed loading comparison data");
-      } finally {
-        setLoading(false);
-      }
-    }
+  /* ---------- GRAPH B FLOW ---------- */
+  useEffect(() => {
+    if (!providerB) return;
+    loadScenarios(providerB, setScenariosB, setScenarioB);
+  }, [providerB]);
 
-    load();
-  }, [provider, region, variableA, variableB]);
+  useEffect(() => {
+    if (!providerB || !scenarioB) return;
+    loadVarsRegions(providerB, scenarioB, setVariablesB, setRegionsB, setVariableB, setRegionB);
+  }, [providerB, scenarioB]);
 
+  useEffect(() => {
+    if (!providerB || !scenarioB || !regionB || !variableB) return;
+    fetchDatasets({ provider: providerB, scenario: scenarioB, region: regionB, variable: variableB })
+      .then(setSeriesB)
+      .catch(() => setSeriesB([]));
+  }, [providerB, scenarioB, regionB, variableB]);
+
+  /* ---------- UI ---------- */
   return (
-    <div className="space-y-4">
-      <div className="p-4 bg-white dark:bg-slate-900 rounded">
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold">Compare Climate Scenarios</h3>
 
-        <div className="grid gap-4 md:grid-cols-4">
-
-          {/* Provider */}
-          <div>
-            <label>Provider</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-            >
-              {providers.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* -------- GRAPH A -------- */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded border">
+          <h4 className="font-semibold mb-3">Scenario A</h4>
+          <div className="grid md:grid-cols-2 gap-3">
+            <Select label="Provider" value={providerA} set={setProviderA} options={providers} />
+            <Select label="Scenario" value={scenarioA} set={setScenarioA} options={scenariosA} />
+            <Select label="Region" value={regionA} set={setRegionA} options={regionsA} />
+            <Select label="Variable" value={variableA} set={setVariableA} options={variablesA} />
           </div>
+          <ChartView data={seriesA} variable={variableA} />
+        </div>
 
-          {/* Regions (filtered) */}
-          <div>
-            <label>Region</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-            >
-              {regions.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
+        {/* -------- GRAPH B -------- */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded border">
+          <h4 className="font-semibold mb-3">Scenario B</h4>
+          <div className="grid md:grid-cols-2 gap-3">
+            <Select label="Provider" value={providerB} set={setProviderB} options={providers} />
+            <Select label="Scenario" value={scenarioB} set={setScenarioB} options={scenariosB} />
+            <Select label="Region" value={regionB} set={setRegionB} options={regionsB} />
+            <Select label="Variable" value={variableB} set={setVariableB} options={variablesB} />
           </div>
-
-          {/* Var A */}
-          <div>
-            <label>Variable A</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={variableA}
-              onChange={(e) => setVariableA(e.target.value)}
-            >
-              {variables.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Var B */}
-          <div>
-            <label>Variable B</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={variableB}
-              onChange={(e) => setVariableB(e.target.value)}
-            >
-              {variables.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </div>
-
+          <ChartView data={seriesB} variable={variableB} />
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <ChartView data={seriesA} variable={variableA} />
-        <ChartView data={seriesB} variable={variableB} />
-      </div>
+      {error && <p className="text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+/* ---------- REUSABLE SELECT ---------- */
+function Select({ label, value, set, options }) {
+  return (
+    <div>
+      <label className="block text-sm mb-1">{label}</label>
+      <select
+        className="w-full rounded border p-2 bg-white dark:bg-slate-800"
+        value={value}
+        onChange={(e) => set(e.target.value)}
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
