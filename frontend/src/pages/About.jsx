@@ -15,11 +15,25 @@ export default function About() {
         <li>Inspect the underlying dataset in a tabular repository view.</li>
       </ul>
       <p className="text-sm">
-        The backend loads the original wide-format Excel file, converts it to
-        a long-format table and exposes typed JSON responses. The frontend
+        The backend loads the original wide-format Excel file, converts it to a
+        long-format table and exposes typed JSON responses. The frontend
         consumes these APIs using React and Plotly for interactive charts.
         Future extensions could add additional providers (e.g. NGFS) and
         export/reporting features.
+      </p>
+
+      <n />
+
+      <p>
+        For more detailed information, please{" "}
+        <a
+          href="https://github.com/Avinashluhana/interactive-climate-explorer-backpack/blob/main/Dataset/README.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          click here
+        </a>
+        .
       </p>
     </div>
   );
