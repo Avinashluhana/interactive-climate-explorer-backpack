@@ -4,9 +4,9 @@ import Dashboard from "./pages/Dashboard";
 import Compare from "./pages/Compare";
 import DataRepo from "./pages/DataRepo";
 import About from "./pages/About";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, HelpCircle } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000/api"; // change here if needed
+const API_BASE = "http://127.0.0.1:8000/api";
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
@@ -92,10 +92,12 @@ function App() {
     <div className="min-h-screen bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
       {/* HEADER */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-slate-800">
+        {/* Left: Logo + Nav */}
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-r from-sky-500 to-emerald-400 text-white font-bold px-3 py-1 rounded">
             Climate Explorer
           </div>
+
           <nav className="hidden md:flex gap-4 ml-4">
             <Link to="/" className="hover:underline">
               Dashboard
@@ -111,10 +113,26 @@ function App() {
             </Link>
           </nav>
         </div>
+
+        {/* Right: Help + Theme */}
         <div className="flex items-center gap-3">
+          {/* Help / README button */}
+          <a
+            href="https://github.com/Avinashluhana/interactive-climate-explorer-backpack/blob/main/Dataset/README.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Project documentation"
+            title="Documentation"
+          >
+            <HelpCircle size={18} />
+          </a>
+
+          {/* Theme toggle */}
           <button
-            className="px-3 py-1 rounded border"
+            className="p-2 rounded border hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label="Toggle theme"
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
