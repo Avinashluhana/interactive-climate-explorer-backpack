@@ -5,7 +5,6 @@ This is a Vite + React + Tailwind prototype for the Climate Data Explorer fronte
 ## Features
 - Multi-page dashboard (Dashboard, Compare, Data Repo, About)
 - Dark/Light mode toggle (Tailwind)
-- Mock data (`src/data/mock_data.json`)
 - Plotly.js for charts
 - Interactive controls for selecting climate scenarios, variables, and regions
 
