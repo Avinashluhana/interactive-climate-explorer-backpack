@@ -1,46 +1,63 @@
 # Climate Explorer Backend (FastAPI)
 
 ## 🚀 Overview
+
 The **Climate Explorer Backend** is a FastAPI-based service that loads climate scenario data from an Excel (.xls) file and exposes a clean API for querying variables, regions, scenarios, and time-series datasets. It powers the Climate Explorer Frontend Dashboard.
 
 ---
 
 ## 📦 Setup Instructions
+
 ### **1. Create Virtual Environment (Recommended: Python 3.11)**
+
 ```bash
 python -m venv .venv
 ```
+
 Activate it:
+
 - Windows PowerShell:
+
 ```bash
 .venv\Scripts\Activate.ps1
 ```
+
 - macOS/Linux:
+
 ```bash
 source .venv/bin/activate
 ```
 
 ### **2. Install Dependencies**
+
 ```bash
 pip install fastapi uvicorn pandas xlrd==2.0.1
 ```
 
 ### **3. Place Dataset File**
+
 Place the Excel file at:
+
 ```
 /mnt/data/R60_bulk.xls
 ```
+
 or update the path inside `data/loader.py`.
 
 ### **4. Run the API**
+
 ```bash
 python -m uvicorn main:app --reload --port 8000
 ```
+
 The API will be available at:
+
 ```
 http://127.0.0.1:8000
 ```
+
 Swagger UI:
+
 ```
 http://127.0.0.1:8000/docs
 ```
@@ -50,24 +67,31 @@ http://127.0.0.1:8000/docs
 ## 📚 API Endpoints
 
 ### ✔ **List Providers**
+
 `GET /api/providers`
 
 ### ✔ **List Variables**
+
 `GET /api/variables`
 
 ### ✔ **List Regions**
+
 `GET /api/regions`
 
 ### ✔ **List Scenarios**
+
 `GET /api/scenarios`
 
 ### ✔ **Query Datasets**
+
 Example:
+
 ```
 /api/datasets?region=World&variable=Concentration%20-%20CO2&start_year=2000&end_year=2050
 ```
 
 ### ✔ **Get All Data for a Provider**
+
 ```
 /api/datasets/provider/IPCC-R6
 ```
@@ -77,36 +101,43 @@ Example:
 ## 🖥 cURL Examples
 
 ### List all providers
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/providers"
 ```
 
 ### List variables
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/variables"
 ```
 
 ### List regions
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/regions"
 ```
 
 ### List scenarios
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/scenarios"
 ```
 
 ### Get dataset (no filters)
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/datasets"
 ```
 
 ### Filter by region + variable
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/datasets?region=World&variable=Concentration%20-%20CO2&start_year=2030&end_year=2100"
 ```
 
 ### Get provider data
+
 ```bash
 curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ```
@@ -116,13 +147,13 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ## 📘 Sample JSON Responses
 
 ### **1. /api/providers**
+
 ```json
-[
-  "IPCC-R6"
-]
+["IPCC-R6"]
 ```
 
 ### **2. /api/variables**
+
 ```json
 [
   "Concentration - CO2",
@@ -133,6 +164,7 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ```
 
 ### **3. /api/datasets (filtered)**
+
 ```json
 [
   {
@@ -159,6 +191,7 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ```
 
 ### **4. /api/datasets/provider/IPCC-R6**
+
 ```json
 [
   {
@@ -177,7 +210,9 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ---
 
 ## 🗂 Data Structure
+
 ### Input XLS Columns
+
 - Region
 - Scenario
 - Variable
@@ -186,6 +221,7 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 - Notes
 
 ### Output JSON Schema
+
 ```json
 {
   "provider": "IPCC-R6",
@@ -199,9 +235,36 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 }
 ```
 
+## ✨ How to Add a New Dataset
+
+To add a new dataset to the Climate Explorer Backend, follow these steps:
+
+### 1. Prepare Your Dataset
+
+Ensure it’s in **CSV** or **Excel** format with columns:
+
+- **Region**, **Scenario**, **Variable**, **Unit**, and year columns (e.g., 2000, 2005, 2010).
+
+### 2. Place Your Dataset
+
+Place the dataset in the `data/` directory:
+
+- **Excel**: `R60_bulk.xls`
+- **CSV**: `SSP_CMIP6_201811.csv`
+
+You can update the dataset paths in `data/loader.py` if you choose different file names or locations.
+
+### 3. Update the Loader Function
+
+Modify the loader functions:
+
+- **Excel**: Update `load_ipcc_excel()` in `data/loader.py`.
+- **CSV**: Update `load_ssp_csv()` in `data/loader.py`.
+
 ---
 
 ## 🏗 Architecture Overview
+
 - **FastAPI** backend
 - **Excel (.xls) loader** converts dataset from wide → long format
 - **Reusable API routes** for variables, regions, scenarios, and time-series
@@ -210,5 +273,5 @@ curl -s "http://127.0.0.1:8000/api/datasets/provider/IPCC-R6"
 ---
 
 ## 🙌 Credits
-Developed as part of the **HIS Project — Climate Data Explorer**.
 
+Developed as part of the **HIS Project — Climate Data Explorer**.

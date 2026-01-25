@@ -55,7 +55,14 @@ export default function Compare() {
     setScenario(data?.[0] || "");
   }
 
-  async function loadVarsRegions(provider, scenario, setVars, setRegs, setVar, setReg) {
+  async function loadVarsRegions(
+    provider,
+    scenario,
+    setVars,
+    setRegs,
+    setVar,
+    setReg,
+  ) {
     const [vars, regs] = await Promise.all([
       fetchVariables(provider, scenario),
       fetchRegions(provider, scenario),
@@ -74,12 +81,24 @@ export default function Compare() {
 
   useEffect(() => {
     if (!providerA || !scenarioA) return;
-    loadVarsRegions(providerA, scenarioA, setVariablesA, setRegionsA, setVariableA, setRegionA);
+    loadVarsRegions(
+      providerA,
+      scenarioA,
+      setVariablesA,
+      setRegionsA,
+      setVariableA,
+      setRegionA,
+    );
   }, [providerA, scenarioA]);
 
   useEffect(() => {
     if (!providerA || !scenarioA || !regionA || !variableA) return;
-    fetchDatasets({ provider: providerA, scenario: scenarioA, region: regionA, variable: variableA })
+    fetchDatasets({
+      provider: providerA,
+      scenario: scenarioA,
+      region: regionA,
+      variable: variableA,
+    })
       .then(setSeriesA)
       .catch(() => setSeriesA([]));
   }, [providerA, scenarioA, regionA, variableA]);
@@ -92,12 +111,24 @@ export default function Compare() {
 
   useEffect(() => {
     if (!providerB || !scenarioB) return;
-    loadVarsRegions(providerB, scenarioB, setVariablesB, setRegionsB, setVariableB, setRegionB);
+    loadVarsRegions(
+      providerB,
+      scenarioB,
+      setVariablesB,
+      setRegionsB,
+      setVariableB,
+      setRegionB,
+    );
   }, [providerB, scenarioB]);
 
   useEffect(() => {
     if (!providerB || !scenarioB || !regionB || !variableB) return;
-    fetchDatasets({ provider: providerB, scenario: scenarioB, region: regionB, variable: variableB })
+    fetchDatasets({
+      provider: providerB,
+      scenario: scenarioB,
+      region: regionB,
+      variable: variableB,
+    })
       .then(setSeriesB)
       .catch(() => setSeriesB([]));
   }, [providerB, scenarioB, regionB, variableB]);
@@ -112,10 +143,30 @@ export default function Compare() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded border">
           <h4 className="font-semibold mb-3">Scenario A</h4>
           <div className="grid md:grid-cols-2 gap-3">
-            <Select label="Provider" value={providerA} set={setProviderA} options={providers} />
-            <Select label="Scenario" value={scenarioA} set={setScenarioA} options={scenariosA} />
-            <Select label="Region" value={regionA} set={setRegionA} options={regionsA} />
-            <Select label="Variable" value={variableA} set={setVariableA} options={variablesA} />
+            <Select
+              label="Model"
+              value={providerA}
+              set={setProviderA}
+              options={providers}
+            />
+            <Select
+              label="Scenario"
+              value={scenarioA}
+              set={setScenarioA}
+              options={scenariosA}
+            />
+            <Select
+              label="Region"
+              value={regionA}
+              set={setRegionA}
+              options={regionsA}
+            />
+            <Select
+              label="Variable"
+              value={variableA}
+              set={setVariableA}
+              options={variablesA}
+            />
           </div>
           <ChartView data={seriesA} variable={variableA} />
         </div>
@@ -124,10 +175,30 @@ export default function Compare() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded border">
           <h4 className="font-semibold mb-3">Scenario B</h4>
           <div className="grid md:grid-cols-2 gap-3">
-            <Select label="Provider" value={providerB} set={setProviderB} options={providers} />
-            <Select label="Scenario" value={scenarioB} set={setScenarioB} options={scenariosB} />
-            <Select label="Region" value={regionB} set={setRegionB} options={regionsB} />
-            <Select label="Variable" value={variableB} set={setVariableB} options={variablesB} />
+            <Select
+              label="Model"
+              value={providerB}
+              set={setProviderB}
+              options={providers}
+            />
+            <Select
+              label="Scenario"
+              value={scenarioB}
+              set={setScenarioB}
+              options={scenariosB}
+            />
+            <Select
+              label="Region"
+              value={regionB}
+              set={setRegionB}
+              options={regionsB}
+            />
+            <Select
+              label="Variable"
+              value={variableB}
+              set={setVariableB}
+              options={variablesB}
+            />
           </div>
           <ChartView data={seriesB} variable={variableB} />
         </div>

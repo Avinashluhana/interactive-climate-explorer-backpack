@@ -68,11 +68,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       <div className="bg-white dark:bg-slate-900 rounded p-4 border shadow-sm">
-        <h3 className="text-lg font-semibold mb-3">Explore Climate Scenarios</h3>
+        <h3 className="text-lg font-semibold mb-3">
+          Explore Climate Scenarios
+        </h3>
 
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            ["Provider", provider, setProvider, providers],
+            ["Model", provider, setProvider, providers],
             ["Scenario", scenario, setScenario, scenarios],
             ["Variable", variable, setVariable, variables],
             ["Region", region, setRegion, regions],

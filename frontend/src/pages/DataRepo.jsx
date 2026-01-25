@@ -30,14 +30,12 @@ export default function DataRepo() {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Dataset Repository</h3>
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        This view lists the underlying rows served by the FastAPI backend.
-        You can use it to quickly inspect which regions, scenarios and
-        variables are available.
+        This view lists the underlying rows served by the FastAPI backend. You
+        can use it to quickly inspect which regions, scenarios and variables are
+        available.
       </p>
 
-      {loading && (
-        <p className="text-sm text-slate-500">Loading datasets…</p>
-      )}
+      {loading && <p className="text-sm text-slate-500">Loading datasets…</p>}
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       {!loading && !error && rows.length > 0 && (
